@@ -145,9 +145,14 @@ data gives pooled AUROC 0.983 / 0.997 / 0.988 (sim1/2/3) and 0.988 combined. Set
    in Tables 1, 2 and 6.
 4. The case study (`BTAD3_sys`) is **detection-only** — real BTAD data has no background ground
    truth, so it has no DMS/restoration results (Figs 7/9 show only the restored background).
-5. All scripts are configured by editing variables at the top (`dataset` / `category` /
-   `model_running`), not via command-line arguments; run times refer to the hardware in the
-   *Computer and software environment* section.
+5. **DRÆM is a two-stage baseline**: it is trained and run in `DRAEM/` (`train_DRAEM.py` →
+   `test_DRAEM.py`), which writes `temp_var/<category>/S_<category>_draem.pt`; `roc_pixelevel.py`
+   / `test_RobMemAE.py` then load that map to produce DRÆM's entries in Tables 1, 2, 6, 7 and
+   Figures 4, 7 (see the *DRÆM baseline (two-stage)* section below).
+6. The **DISCO** scripts are configured by editing variables at the top (`dataset` / `category` /
+   `model_running`); the **DRÆM** scripts instead take command-line arguments (see
+   `DRAEM/command.txt`). Run times refer to the hardware in the *Computer and software
+   environment* section.
 
 ### DRÆM baseline (two-stage)
 
