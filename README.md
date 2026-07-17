@@ -132,6 +132,7 @@ data gives pooled AUROC 0.983 / 0.997 / 0.988 (sim1/2/3) and 0.988 combined. Set
 | Table 3 — threshold-free sensitivity | `roc_pixelevel.py` | `eval_contam_levels=True` for the 5/8/10% columns |
 | Tables 2, 4, 5, 7, 8, 9 — threshold-dependent (Dice + DMS₂₀) | `test_RobMemAE.py` / `test_rdae.py` | `whether_plot=True`; Dice and DMS₂₀-PSNR/SSIM come out together |
 | Sec 4.4 — RDAE bottleneck search | `train_rdae.py` → `test_rdae.py` / `roc_pixelevel.py` (`eval_rdae_variants=True`) | 5 stride configs; `s234` (5×5) is best |
+| DRÆM baseline (all DRÆM entries) | `DRAEM/train_DRAEM.py` → `DRAEM/test_DRAEM.py`; then `roc_pixelevel.py` | `test_DRAEM.py` does DRÆM's Dice/DMS (Tables 2, 4, 5, 7) + panels (Figs 4, 7); `roc_pixelevel.py` loads its exported map for AUROC/AUPRC (Tables 1, 3, 6) |
 
 **Notes on the workflow.**
 1. In all **benchmark** tables/figures, the **RDAE** results are the best bottleneck variant
@@ -139,42 +140,47 @@ data gives pooled AUROC 0.983 / 0.997 / 0.988 (sim1/2/3) and 0.988 combined. Set
    `eval_rdae_variants=True` — **not** the generic `rdae` output of the main scripts.
 2. Several results **share one execution**: the threshold-dependent metrics (Tables 2, 4, 5, 7,
    8, 9) come from `test_RobMemAE.py` / `test_rdae.py`, which emit Dice and DMS₂₀-PSNR/SSIM in a
-   single pass; the threshold-free metrics (Tables 1, 3, 6) come from `roc_pixelevel.py`; and
-   Figure 5 plots the same numbers as Tables 3–5.
+   single pass (DRÆM excepted — see note 5); the threshold-free metrics (Tables 1, 3, 6) come
+   from `roc_pixelevel.py`; and Figure 5 plots the same numbers as Tables 3–5.
 3. The **2%-anomaly-ratio** column of the sensitivity tables equals the simulation-study values
    in Tables 1, 2 and 6.
 4. The case study (`BTAD3_sys`) is **detection-only** — real BTAD data has no background ground
    truth, so it has no DMS/restoration results (Figs 7/9 show only the restored background).
-5. **DRÆM is a two-stage baseline**: it is trained and run in `DRAEM/` (`train_DRAEM.py` →
-   `test_DRAEM.py`), which writes `temp_var/<category>/S_<category>_draem.pt`; `roc_pixelevel.py`
-   / `test_RobMemAE.py` then load that map to produce DRÆM's entries in Tables 1, 2, 6, 7 and
-   Figures 4, 7 (see the *DRÆM baseline (two-stage)* section below).
+5. **DRÆM is a self-contained baseline**, trained and evaluated in `DRAEM/` (`train_DRAEM.py` →
+   `test_DRAEM.py`). `test_DRAEM.py` computes DRÆM's Dice + DMS₂₀-PSNR/SSIM (Tables 2, 4, 5, 7)
+   and its qualitative panels (Figures 4, 7) itself; it also exports
+   `temp_var/<category>/S_<category>_draem.pt`, which **`roc_pixelevel.py`** loads to compute
+   DRÆM's threshold-free AUROC/AUPRC (Tables 1, 3, 6). `test_RobMemAE.py` does **not** handle
+   DRÆM (see the *DRÆM baseline* section below).
 6. The **DISCO** scripts are configured by editing variables at the top (`dataset` / `category` /
    `model_running`); the **DRÆM** scripts instead take command-line arguments (see
    `DRAEM/command.txt`). Run times refer to the hardware in the *Computer and software
    environment* section.
 
-### DRÆM baseline (two-stage)
+### DRÆM baseline
 
-DRÆM ([`DRAEM/`](DRAEM/)) is trained and run in its own folder; its anomaly maps are then
-consumed by the DISCO evaluation scripts like any other method.
+DRÆM ([`DRAEM/`](DRAEM/)) is trained and evaluated in its own folder. It computes its own Dice /
+DMS metrics and qualitative panels; only its threshold-free AUROC/AUPRC is computed by the DISCO
+pipeline, from an exported anomaly map.
 
-1. **Train + generate maps** (run inside `DRAEM/`):
+1. **Train + evaluate** (run inside `DRAEM/`):
    ```bash
    # train one model per category (--obj_id selects the category)
    python train_DRAEM.py --gpu_id 0 --obj_id 6 --lr 0.0001 --bs 8 --epochs 500 \
        --data_path ./datasets/data/ --anomaly_source_path ./datasets/dtd/images/ \
        --checkpoint_path ./checkpoints/ --log_path ./logs/
-   # write temp_var/<category>/S_<category>_draem.pt
+   # evaluate + export the anomaly map
    python test_DRAEM.py --gpu_id 0 --obj_id 5 --base_model_name "DRAEM_test_0.0001_500_bs8" \
        --data_path ./datasets/data/ --checkpoint_path ./checkpoints/
    ```
-   `test_DRAEM.py`'s `save_train_S` saves `S_defect = X − reconstruction` to
-   `temp_var/<category>/S_<category>_draem.pt`, indexed to match the MVTEC loader.
+   `test_DRAEM.py` computes DRÆM's Dice + DMS₂₀-PSNR/SSIM (**Tables 2, 4, 5, 7**) and its
+   qualitative panels (**Figures 4, 7**) directly. Its `save_train_S` also writes
+   `S_defect = X − reconstruction` to `temp_var/<category>/S_<category>_draem.pt`, indexed to
+   match the MVTEC loader.
 
-2. **Evaluate** — run `roc_pixelevel.py` / `test_RobMemAE.py` with `model_running='draem'`; they
-   load `S_<category>_draem.pt` and compute DRÆM's AUROC/AUPRC/Dice/DMS exactly like the other
-   methods. This produces DRÆM's entries in Tables 1, 2, 6, 7 and Figures 4, 7.
+2. **Threshold-free metrics** — `roc_pixelevel.py` (with `model_running='draem'`) loads
+   `S_<category>_draem.pt` and computes DRÆM's AUROC/AUPRC (**Tables 1, 3, 6**) in the same pass
+   as the other methods. (`test_RobMemAE.py` does not evaluate DRÆM.)
 
 Training needs the external **Describable Textures Dataset (DTD)** as the anomaly source
 (`--anomaly_source_path`); `DRAEM/scripts/download_dataset.sh` fetches it. DRÆM's `checkpoints/`
