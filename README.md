@@ -149,6 +149,34 @@ data gives pooled AUROC 0.983 / 0.997 / 0.988 (sim1/2/3) and 0.988 combined. Set
    `model_running`), not via command-line arguments; run times refer to the hardware in the
    *Computer and software environment* section.
 
+### DRÆM baseline (two-stage)
+
+DRÆM ([`DRAEM/`](DRAEM/)) is trained and run in its own folder; its anomaly maps are then
+consumed by the DISCO evaluation scripts like any other method.
+
+1. **Train + generate maps** (run inside `DRAEM/`):
+   ```bash
+   # train one model per category (--obj_id selects the category)
+   python train_DRAEM.py --gpu_id 0 --obj_id 6 --lr 0.0001 --bs 8 --epochs 500 \
+       --data_path ./datasets/data/ --anomaly_source_path ./datasets/dtd/images/ \
+       --checkpoint_path ./checkpoints/ --log_path ./logs/
+   # write temp_var/<category>/S_<category>_draem.pt
+   python test_DRAEM.py --gpu_id 0 --obj_id 5 --base_model_name "DRAEM_test_0.0001_500_bs8" \
+       --data_path ./datasets/data/ --checkpoint_path ./checkpoints/
+   ```
+   `test_DRAEM.py`'s `save_train_S` saves `S_defect = X − reconstruction` to
+   `temp_var/<category>/S_<category>_draem.pt`, indexed to match the MVTEC loader.
+
+2. **Evaluate** — run `roc_pixelevel.py` / `test_RobMemAE.py` with `model_running='draem'`; they
+   load `S_<category>_draem.pt` and compute DRÆM's AUROC/AUPRC/Dice/DMS exactly like the other
+   methods. This produces DRÆM's entries in Tables 1, 2, 6, 7 and Figures 4, 7.
+
+Training needs the external **Describable Textures Dataset (DTD)** as the anomaly source
+(`--anomaly_source_path`); `DRAEM/scripts/download_dataset.sh` fetches it. DRÆM's `checkpoints/`
+and `datasets/` are hosted externally (like `data/` and `temp_var/`, see the note above).
+
 ## License
 
 Released under the MIT License — see [`LICENSE`](LICENSE). Copyright (c) 2026 Wang, Mou, Shi, Zhang.
+The bundled DRÆM baseline in [`DRAEM/`](DRAEM/) retains its own MIT License (© 2021 VitjanZ,
+`DRAEM/LICENSE`).
