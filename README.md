@@ -130,7 +130,7 @@ data gives pooled AUROC 0.983 / 0.997 / 0.988 (sim1/2/3) and 0.988 combined. Set
 | Fig 5 — sensitivity plots | `plot_sensitivity.py` | plots the values of Tables 3–5 |
 | Tables 1, 6 — threshold-free (sim / case study) | `roc_pixelevel.py` | `eval_contam_levels=False`, `eval_rdae_variants=False` |
 | Table 3 — threshold-free sensitivity | `roc_pixelevel.py` | `eval_contam_levels=True` for the 5/8/10% columns |
-| Tables 2, 4, 5, 7, 8, 9 — threshold-dependent (Dice + DMS₂₀) | `test_RobMemAE.py` / `test_rdae.py` | `whether_plot=True`; Dice and DMS₂₀-PSNR/SSIM come out together |
+| Tables 2, 4, 5, 7, 8, 9 — threshold-dependent (Dice + DMS₂₀) | `test_RobMemAE.py` / `test_rdae.py` | `whether_plot=True`; Dice + DMS₂₀ together. Tables **2, 7, 8, 9** (blob/line or per-type breakdown) also need `whether_just_result=False`; Tables **4, 5** (overall only) use the default (`True`). |
 | Sec 4.4 — RDAE bottleneck search | `train_rdae.py` → `test_rdae.py` / `roc_pixelevel.py` (`eval_rdae_variants=True`) | 5 stride configs; `s234` (5×5) is best |
 | DRÆM baseline (all DRÆM entries) | `DRAEM/train_DRAEM.py` → `DRAEM/test_DRAEM.py`; then `roc_pixelevel.py` | `test_DRAEM.py` does DRÆM's Dice/DMS (Tables 2, 4, 5, 7) + panels (Figs 4, 7); `roc_pixelevel.py` loads its exported map for AUROC/AUPRC (Tables 1, 3, 6) |
 
@@ -152,7 +152,12 @@ data gives pooled AUROC 0.983 / 0.997 / 0.988 (sim1/2/3) and 0.988 combined. Set
    `temp_var/<category>/S_<category>_draem.pt`, which **`roc_pixelevel.py`** loads to compute
    DRÆM's threshold-free AUROC/AUPRC (Tables 1, 3, 6). `test_RobMemAE.py` does **not** handle
    DRÆM (see the *DRÆM baseline* section below).
-6. The **DISCO** scripts are configured by editing variables at the top (`dataset` / `category` /
+6. `test_RobMemAE.py`'s `whether_just_result=True` prints only the **overall** Dice / PSNR / SSIM
+   summary; set it **`False`** to also print the **group breakdown** (blob/line for simulation,
+   per-defect-type for the case study) and the per-sample panels. So Tables **2, 7, 8, 9** and
+   the qualitative figures need `whether_just_result=False`, while Tables **4, 5** (overall only)
+   use the default `True`.
+7. The **DISCO** scripts are configured by editing variables at the top (`dataset` / `category` /
    `model_running`); the **DRÆM** scripts instead take command-line arguments (see
    `DRAEM/command.txt`). Run times refer to the hardware in the *Computer and software
    environment* section.
