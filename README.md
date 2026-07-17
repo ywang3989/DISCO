@@ -1,0 +1,139 @@
+# DISCO
+
+Reference implementation for the DISCO anomaly-detection method. DISCO learns from a
+**mixed (partly-contaminated) training set** by decomposing it as
+
+```
+X = L + S + E
+```
+
+* **L** — low-rank background, reconstructed by a convolutional autoencoder whose latent
+  *positional matrix* `P` is nuclear-norm penalized (sample-wise low-rank prior);
+* **S** — sparse anomaly (soft-thresholding);
+* **E** — dense noise (ridge / L2 closed form).
+
+The decomposition is solved by an ADMM loop that alternates between updating `L`, the
+closed-form `S`/`E`/dual variables, and the autoencoder weights. Anomalies are then read off
+the recovered sparse component `S`.
+
+---
+
+## Computer and software environment
+
+Results in the paper were produced with **PyTorch 2.0.1 (CUDA 11.8 build)** in **Python 3.10.6**
+on **Windows 11 (64-bit)**, running on an **NVIDIA GeForce RTX 3060 Laptop GPU** (6 GB, compute
+capability 8.6; CUDA 11.8, cuDNN 8.7) and an **AMD Ryzen 9 5900HS with Radeon Graphics (3.30 GHz)**.
+
+## Installation
+
+1. Install Python 3.10 (tested on 3.10.6); optionally create a fresh environment
+   (`conda create -n disco python=3.10 && conda activate disco`).
+2. Install the dependencies (this pulls the CUDA-11.8 PyTorch build from the PyTorch index):
+   ```bash
+   pip install -r requirements.txt
+   ```
+   For a CPU-only or different-CUDA machine, swap the two `+cu118` pins in `requirements.txt`
+   for the matching PyTorch 2.0.1 build. No compilation step is required.
+
+## Folder structure
+
+```
+Codes/
+├── models.py              network definitions: LRAE_2d (DISCO autoencoder), MemAE_2d
+├── utlis.py               MVTEC dataset loader, ADMM operators (SoftThresholding),
+│                          RPCA_gpu, and metrics (Dice, PSNR, SSIM, DMS)
+├── train_RobMemAE.py      DISCO training — pretraining + ADMM (X = L + S + E);
+│                          also the rpca / memae baselines
+├── test_RobMemAE.py       evaluation: Dice + DMS-PSNR / DMS-SSIM (background restoration)
+├── roc_pixelevel.py       evaluation: threshold-free pixel-level AUROC / AUPRC (+ combined)
+├── train_rdae.py          RDAE bottleneck-variant baseline — training
+├── test_rdae.py           RDAE bottleneck-variant baseline — evaluation
+├── simulation_data.py     builds the simulated contaminated datasets (blobs + lines)
+├── check_rank.py          latent positional-matrix rank / singular-value analysis
+├── plot_dms.py            DMS-metric figure script
+├── plot_sensitivity.py    hyperparameter-sensitivity figure script
+├── requirements.txt
+├── README.md
+│
+├── data/                              INPUT DATA
+│   ├── BTech_Dataset_Transformed/     real BTAD images — case study (category BTAD3_sys)
+│   └── btad_simulation/               simulated data, one folder per contamination level
+│       └── 02_sim_contam_level_0.02/  (also _0.05 / _0.08 / _0.1)
+│           └── <category>/train/      each category (e.g. 02_sim1/2/3) has:
+│               ├── good/                  the mixed training set (X)
+│               ├── defect/               contaminated samples (evaluated)
+│               ├── defect_background/    clean background   (L ground truth)
+│               └── defect_ground_truth/  binary anomaly mask (S ground truth)
+│
+├── temp_var/                          TRAINED ARTIFACTS (evaluation loads from here)
+│   ├── <category>/                    weights (.pth) + decomposition tensors L/S/E/Y (.pt);
+│   │                                  the epoch to load is set in the `model_para` dict
+│   │                                  inside test_RobMemAE.py / roc_pixelevel.py
+│   ├── pretrained_weight/             autoencoder pretraining checkpoints
+│   └── rdae_bottleneck_variants/      RDAE variant artifacts
+│
+└── simulation/                        intermediate products of simulation_data.py
+    └── btad2/                         low-rank backgrounds + per-contamination anomaly sets
+```
+
+> **Note on data/weights.** `data/` and `temp_var/` are large (tens of GB of images and
+> tensors) and are not tracked in version control. Obtain them from the dataset release /
+> project archive and place them at the paths above before running.
+
+## Running
+
+Each script is configured by editing the variables at the top (`dataset`, `category`,
+`model_running`), then run directly — there is no command-line interface.
+
+```bash
+# 1. (optional) regenerate the simulated datasets
+python simulation_data.py
+
+# 2. train DISCO (set dataset / category / model_running at the top of the file)
+python train_RobMemAE.py
+
+# 3. evaluate
+python test_RobMemAE.py     # Dice, DMS-PSNR, DMS-SSIM
+python roc_pixelevel.py     # pixel-level AUROC / AUPRC (+ simulation-combined)
+```
+
+`model_running` selects the method: `disco`, the ablations `disco-wo-p` / `disco-wo-e` /
+`disco-wo-ep`, or the baselines `rdae` / `rpca` / `memae` (and `draem`, whose `S` tensor is
+produced externally). The RDAE bottleneck-variant study uses `train_rdae.py` / `test_rdae.py`.
+
+## Reproducing the reported numbers
+
+The evaluation scripts hold a `model_para` dictionary mapping each `(category, model)` to
+`[training_epoch, threshold]`. These select the corresponding weights and `L/S/E` tensors
+under `temp_var/<category>/` and reproduce the paper's results — e.g. DISCO on the simulation
+data gives pooled AUROC 0.983 / 0.997 / 0.988 (sim1/2/3) and 0.988 combined. Set
+`category` and `model_running` to the desired run and execute the evaluation scripts above.
+
+## Reproducing the paper's figures and tables
+
+| Result | Script(s) | Mode / settings |
+|---|---|---|
+| Fig 2 — DMS metric illustration | `plot_dms.py` (reads `temp_var/DMS5.xlsx`) | plots DMS₅-PSNR/SSIM curves |
+| Figs 3, 6 — latent-rank comparison | `check_rank.py` | `category='02_sim1'` (Fig 3) / `'BTAD3_sys'` (Fig 6); `variants=['disco','disco-wo-p']` |
+| Figs 4, 7, 8, 9 — qualitative panels | `test_RobMemAE.py` / `test_rdae.py` | `whether_plot=True`, `whether_just_result=False`; one run per method/variant |
+| Fig 5 — sensitivity plots | `plot_sensitivity.py` | plots the values of Tables 3–5 |
+| Tables 1, 6 — threshold-free (sim / case study) | `roc_pixelevel.py` | `eval_contam_levels=False`, `eval_rdae_variants=False` |
+| Table 3 — threshold-free sensitivity | `roc_pixelevel.py` | `eval_contam_levels=True` for the 5/8/10% columns |
+| Tables 2, 4, 5, 7, 8, 9 — threshold-dependent (Dice + DMS₂₀) | `test_RobMemAE.py` / `test_rdae.py` | `whether_plot=True`; Dice and DMS₂₀-PSNR/SSIM come out together |
+| Sec 4.4 — RDAE bottleneck search | `train_rdae.py` → `test_rdae.py` / `roc_pixelevel.py` (`eval_rdae_variants=True`) | 5 stride configs; `s234` (5×5) is best |
+
+**Notes on the workflow.**
+1. In all **benchmark** tables/figures, the **RDAE** results are the best bottleneck variant
+   (`s234`, 5×5 latent), reproduced via `test_rdae.py` / `roc_pixelevel.py` with
+   `eval_rdae_variants=True` — **not** the generic `rdae` output of the main scripts.
+2. Several results **share one execution**: the threshold-dependent metrics (Tables 2, 4, 5, 7,
+   8, 9) come from `test_RobMemAE.py` / `test_rdae.py`, which emit Dice and DMS₂₀-PSNR/SSIM in a
+   single pass; the threshold-free metrics (Tables 1, 3, 6) come from `roc_pixelevel.py`; and
+   Figure 5 plots the same numbers as Tables 3–5.
+3. The **2%-anomaly-ratio** column of the sensitivity tables equals the simulation-study values
+   in Tables 1, 2 and 6.
+4. The case study (`BTAD3_sys`) is **detection-only** — real BTAD data has no background ground
+   truth, so it has no DMS/restoration results (Figs 7/9 show only the restored background).
+5. All scripts are configured by editing variables at the top (`dataset` / `category` /
+   `model_running`), not via command-line arguments; run times refer to the hardware in the
+   *Computer and software environment* section.

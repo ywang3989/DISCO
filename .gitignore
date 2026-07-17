@@ -1,0 +1,15 @@
+# ── Large datasets & trained artifacts — hosted externally, see README ──
+data/
+temp_var/
+simulation/
+model_para/
+
+# ── Python / tooling / editor ──
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
