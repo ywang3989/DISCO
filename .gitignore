@@ -4,6 +4,12 @@ temp_var/
 simulation/
 model_para/
 
+# DRAEM baseline heavy artifacts (code is tracked; weights/data hosted externally)
+DRAEM/checkpoints/
+DRAEM/datasets/
+DRAEM/logs/
+DRAEM/outputs/
+
 # ── Python / tooling / editor ──
 __pycache__/
 *.py[cod]

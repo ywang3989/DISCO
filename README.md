@@ -54,6 +54,11 @@ Codes/
 ├── plot_sensitivity.py    hyperparameter-sensitivity figure script
 ├── requirements.txt
 ├── README.md
+├── LICENSE
+│
+├── DRAEM/                 DRÆM baseline (Zavrtanik et al., ICCV 2021; MIT © VitjanZ) —
+│                          original code with minor edits to train_DRAEM.py / test_DRAEM.py
+│                          for this folder layout; its checkpoints/ & datasets/ are external
 │
 ├── data/                              INPUT DATA
 │   ├── BTech_Dataset_Transformed/     real BTAD images — case study (category BTAD3_sys)
@@ -98,8 +103,14 @@ python roc_pixelevel.py     # pixel-level AUROC / AUPRC (+ simulation-combined)
 ```
 
 `model_running` selects the method: `disco`, the ablations `disco-wo-p` / `disco-wo-e` /
-`disco-wo-ep`, or the baselines `rdae` / `rpca` / `memae` (and `draem`, whose `S` tensor is
-produced externally). The RDAE bottleneck-variant study uses `train_rdae.py` / `test_rdae.py`.
+`disco-wo-ep`, or the baselines `rdae` / `rpca` / `memae` (and `draem`). The RDAE
+bottleneck-variant study uses `train_rdae.py` / `test_rdae.py`.
+
+The **DRÆM** baseline is in [`DRAEM/`](DRAEM/) — the original DRÆM implementation (Zavrtanik
+et al., ICCV 2021; MIT © VitjanZ, see `DRAEM/LICENSE`) with minor edits to `train_DRAEM.py` /
+`test_DRAEM.py` for this folder layout. It is trained/evaluated on its own; its output anomaly
+map is saved as `temp_var/<category>/S_<category>_draem.pt`, which the DISCO evaluation scripts
+then load like any other method. Its `checkpoints/` and `datasets/` are hosted externally.
 
 ## Reproducing the reported numbers
 
