@@ -103,9 +103,9 @@ produced externally). The RDAE bottleneck-variant study uses `train_rdae.py` / `
 
 ## Reproducing the reported numbers
 
-The evaluation scripts hold a `model_para` dictionary mapping each `(category, model)` to
-`[training_epoch, threshold]`. These select the corresponding weights and `L/S/E` tensors
-under `temp_var/<category>/` and reproduce the paper's results — e.g. DISCO on the simulation
+The evaluation scripts (`test_RobMemAE.py`, `roc_pixelevel.py`) define an in-script `model_para`
+dictionary mapping each `(category, model)` to `[training_epoch, threshold]`. These select the
+corresponding weights and `L/S/E` tensors under `temp_var/<category>/` and reproduce the paper's results — e.g. DISCO on the simulation
 data gives pooled AUROC 0.983 / 0.997 / 0.988 (sim1/2/3) and 0.988 combined. Set
 `category` and `model_running` to the desired run and execute the evaluation scripts above.
 
@@ -137,3 +137,7 @@ data gives pooled AUROC 0.983 / 0.997 / 0.988 (sim1/2/3) and 0.988 combined. Set
 5. All scripts are configured by editing variables at the top (`dataset` / `category` /
    `model_running`), not via command-line arguments; run times refer to the hardware in the
    *Computer and software environment* section.
+
+## License
+
+Released under the MIT License — see [`LICENSE`](LICENSE). Copyright (c) 2026 Wang, Mou, Shi, Zhang.
