@@ -81,9 +81,16 @@ Codes/
     └── btad2/                         low-rank backgrounds + per-contamination anomaly sets
 ```
 
-> **Note on data/weights.** `data/` and `temp_var/` are large (tens of GB of images and
-> tensors) and are not tracked in version control. Obtain them from the dataset release /
-> project archive and place them at the paths above before running.
+## Data & weights
+
+The datasets and trained artifacts are too large for version control and are hosted externally:
+
+**➜ [Data & weights (Google Drive)](https://drive.google.com/drive/folders/1oFihSWU6XCDnWORm-I7RtUCFmF49TKvE?usp=drive_link)**
+
+Download and place the folders at the paths shown in the structure above before running:
+`data/` (BTAD + simulation images), `temp_var/` (weights + `L/S/E/Y` decomposition tensors +
+pretrained checkpoints), `simulation/` (intermediate simulation products), and the DRÆM baseline's
+`DRAEM/checkpoints/` and `DRAEM/datasets/` (including the DTD anomaly-source textures).
 
 ## Running
 
