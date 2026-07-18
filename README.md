@@ -85,7 +85,7 @@ Codes/
 
 The datasets and trained artifacts are too large for version control and are hosted externally:
 
-**➜ [Data & weights (Google Drive)](https://drive.google.com/drive/folders/1oFihSWU6XCDnWORm-I7RtUCFmF49TKvE?usp=drive_link)**
+**➜ [Data & weights (Google Drive)](https://drive.google.com/drive/folders/1oFihSWU6XCDnWORm-I7RtUCFmF49TKvE?usp=sharing)**
 
 Download and place the folders at the paths shown in the structure above before running:
 `data/` (BTAD + simulation images), `temp_var/` (weights + `L/S/E/Y` decomposition tensors +
